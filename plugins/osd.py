@@ -85,9 +85,12 @@ class CephOSDPlugin(base.Base):
             
             data[prefix][osd_id] = {}
 
-            data[prefix][osd_id]['osd'] = self.copy_stats(json_hash['osd'], '^op_')
+            data[prefix][osd_id]['osd']         = self.copy_stats(json_hash['osd'], '^op_')
+            data[prefix][osd_id]['objecter']    = self.copy_stats(json_hash['objecter'], '^op_')
+            data[prefix][osd_id]['filestore']   = self.copy_stats(json_hash['filestore'], '.*')
 
-        print pprint.pformat(data)
+
+#        print pprint.pformat(data)
 
         return data
 
