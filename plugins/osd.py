@@ -29,7 +29,7 @@
 #   http://ceph.com/docs/master/rados/operations/monitoring/#checking-osd-status
 #
 
-#import collectd
+import collectd
 import json
 import traceback
 import subprocess
@@ -52,7 +52,6 @@ class CephOSDPlugin(base.Base):
 
         cluster_name = 'ceph'
 
-#        asok_path   = '/var/run/ceph/ceph-osd.30.asok'
         format      = 'json-pretty'
 
         prefix = self.prefix
@@ -94,11 +93,11 @@ class CephOSDPlugin(base.Base):
 
         return data
 
-#try:
-plugin = CephOSDPlugin()
-#except Exception as exc:
-#    collectd.error("ceph-osd: failed to initialize ceph osd plugin :: %s :: %s"
-#            % (exc, traceback.format_exc()))
+try:
+    plugin = CephOSDPlugin()
+except Exception as exc:
+    collectd.error("ceph-osd: failed to initialize ceph osd plugin :: %s :: %s"
+            % (exc, traceback.format_exc()))
 
 plugin.get_stats()
 
@@ -110,8 +109,5 @@ def read_callback():
     """Callback triggerred by collectd on read"""
     plugin.read_callback()
 
-#collectd.register_config(configure_callback)
-#collectd.register_read(read_callback, plugin.interval)
-
-
-
+collectd.register_config(configure_callback)
+collectd.register_read(read_callback, plugin.interval)

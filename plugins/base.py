@@ -27,7 +27,7 @@
 #   http://collectd.org/documentation/manpages/collectd-python.5.shtml
 #
 
-#import collectd
+import collectd
 import datetime
 import traceback
 import socket
@@ -192,7 +192,7 @@ class Base(object):
             stat_name   = key
             stat_value  = source_hash[key]
 
-            print 'Checking stat "%s"' % stat_name
+#            print 'Checking stat "%s"' % stat_name
 
             if not re.match(r'%s' % selection, stat_name):
                 # Ignore not selected stats
