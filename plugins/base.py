@@ -33,6 +33,7 @@ import traceback
 import socket
 import json
 import struct
+import re
 
 from ceph_argparse import parse_json_funcsigs, validate_command
 
@@ -114,7 +115,6 @@ class Base(object):
         self.logdebug("sent metric %s.%s.%s.%s.%s"
                 % (plugin, plugin_instance, type, type_instance, value))
 
-
     #
     # From /usr/bin/ceph: do socket IO against a ceph admin socket
     #
@@ -173,6 +173,45 @@ class Base(object):
             raise RuntimeError('exception: ' + str(e))
 
         return ret
+
+    def copy_stats(self, source_hash, selection):
+        """
+        Copy stats from source_hash to target_hash based on applying the selection regex against the names
+        in the hash at the root level on the source hash.
+
+        Additonally, the following transformations are applied:
+
+        - For stat names ending in latency and referencing a hash the latency is calculated and substitutes 
+          the hash in the target hash
+        """
+
+        target_hash = {}
+
+        for key in source_hash.keys():
+
+            stat_name   = key
+            stat_value  = source_hash[key]
+
+            print 'Checking stat "%s"' % stat_name
+
+            if not re.match(r'%s' % selection, stat_name):
+                # Ignore not selected stats
+                continue
+
+            # Process latency
+            if isinstance(stat_value, dict):
+                lat_sum         = float(stat_value['sum'])
+                lat_avgcount    = float(stat_value['avgcount'])
+                if lat_avgcount == 0:
+                    target_hash[stat_name] = 0
+                else:
+                    target_hash[stat_name] = lat_sum / lat_avgcount
+                continue
+
+            # Process simple stats
+            target_hash[stat_name] = stat_value
+
+        return target_hash
 
     def read_callback(self):
         try:

@@ -45,45 +45,6 @@ class CephOSDPlugin(base.Base):
         base.Base.__init__(self)
         self.prefix = 'ceph'
     
-    def copy_stats(self, source_hash, selection):
-        """
-        Copy stats from source_hash to target_hash based on applying the selection regex against the names
-        in the hash at the root level on the source hash.
-
-        Additonally, the following transformations are applied:
-
-        - For stat names ending in latency and referencing a hash the latency is calculated and substitutes 
-          the hash in the target hash
-        """
-
-        target_hash = {}
-
-        for key in source_hash.keys():
-
-            stat_name   = key
-            stat_value  = source_hash[key]
-
-            print 'Checking stat "%s"' % stat_name
-
-            if not re.match(r'%s' % selection, stat_name):
-                # Ignore not selected stats
-                continue
-
-            # Process latency
-            if isinstance(stat_value, dict):
-                lat_sum         = float(stat_value['sum'])
-                lat_avgcount    = float(stat_value['avgcount'])
-                if lat_avgcount == 0:
-                    target_hash[stat_name] = 0
-                else:
-                    target_hash[stat_name] = lat_sum / lat_avgcount
-                continue
-
-            # Process simple stats
-            target_hash[stat_name] = stat_value
-
-        return target_hash
-
     def get_stats(self):
         """Retrieves stats from ceph osds"""
 
@@ -128,49 +89,7 @@ class CephOSDPlugin(base.Base):
 
         print pprint.pformat(data)
 
-#        ceph_cluster = "%s-%s" % (self.prefix, self.cluster)
-
-#        data = { ceph_cluster: { 
-#            'pool': { 'number': 0 },
-#            'osd': { 'up': 0, 'in': 0, 'down': 0, 'out': 0} 
-#        } }
-#        output = None
-#        try:
-#            output = subprocess.check_output('ceph osd dump --format json', shell=True)
-#        except Exception as exc:
-#            collectd.error("ceph-osd: failed to ceph osd dump :: %s :: %s"
-#                    % (exc, traceback.format_exc()))
-#            return
-
-#        if output is None:
-#            collectd.error('ceph-osd: failed to ceph osd dump :: output was None')
-
-#        json_data = json.loads(output)
-
-        # number of pools
-#        data[ceph_cluster]['pool']['number'] = len(json_data['pools'])
-
-        # pool metadata
-#        for pool in json_data['pools']:
-#            pool_name = "pool-%s" % pool['pool_name']
-#            data[ceph_cluster][pool_name] = {}
-#            data[ceph_cluster][pool_name]['size'] = pool['size']
-#            data[ceph_cluster][pool_name]['pg_num'] = pool['pg_num']
-#            data[ceph_cluster][pool_name]['pgp_num'] = pool['pg_placement_num']
-
-#        osd_data = data[ceph_cluster]['osd']
-        # number of osds in each possible state
-#        for osd in json_data['osds']:
-#            if osd['up'] == 1:
-#                osd_data['up'] += 1
-#            else:
-#                osd_data['down'] += 1
-#            if osd['in'] == 1:
-#                osd_data['in'] += 1
-#            else:
-#                osd_data['out'] += 1
-#    
-#        return data
+        return data
 
 #try:
 plugin = CephOSDPlugin()
