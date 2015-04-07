@@ -52,7 +52,7 @@ class CephOSDPlugin(base.Base):
 
         cluster_name = 'ceph'
 
-        format      = 'json-pretty'
+        format      = 'json'
 
         prefix = self.prefix
 
