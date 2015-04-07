@@ -27,9 +27,15 @@
 #   http://collectd.org/documentation/manpages/collectd-python.5.shtml
 #
 
-import collectd
+#import collectd
 import datetime
 import traceback
+import socket
+import json
+import struct
+
+from ceph_argparse import parse_json_funcsigs, validate_command
+
 
 class Base(object):
 
@@ -107,6 +113,66 @@ class Base(object):
         val.dispatch()
         self.logdebug("sent metric %s.%s.%s.%s.%s"
                 % (plugin, plugin_instance, type, type_instance, value))
+
+
+    #
+    # From /usr/bin/ceph: do socket IO against a ceph admin socket
+    #
+    # We copy / paste the code instead of just invoking /usr/bin/ceph to prevent a python interpreter start everytime
+    #
+    def admin_socket(self, asok_path, cmd, format=''):
+        """
+        Send a daemon (--admin-daemon) command 'cmd'.  asok_path is the
+        path to the admin socket; cmd is a list of strings; format may be
+        set to one of the formatted forms to get output in that form
+        (daemon commands don't support 'plain' output).
+        """
+
+        def do_sockio(path, cmd):
+            """ helper: do all the actual low-level stream I/O """
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            sock.connect(path)
+            try:
+                sock.sendall(cmd + '\0')
+                len_str = sock.recv(4)
+                if len(len_str) < 4:
+                    raise RuntimeError("no data returned from admin socket")
+                l, = struct.unpack(">I", len_str)
+                ret = ''
+
+                got = 0
+                while got < l:
+                    bit = sock.recv(l - got)
+                    ret += bit
+                    got += len(bit)
+
+            except Exception as e:
+                raise RuntimeError('exception: ' + str(e))
+            return ret
+
+        try:
+            cmd_json = do_sockio(asok_path,
+                json.dumps({"prefix":"get_command_descriptions"}))
+        except Exception as e:
+            raise RuntimeError('exception getting command descriptions: ' + str(e))
+
+        if cmd == 'get_command_descriptions':
+            return cmd_json
+
+        sigdict = parse_json_funcsigs(cmd_json, 'cli')
+        valid_dict = validate_command(sigdict, cmd)
+        if not valid_dict:
+            raise RuntimeError('invalid command')
+
+        if format:
+            valid_dict['format'] = format
+
+        try:
+            ret = do_sockio(asok_path, json.dumps(valid_dict))
+        except Exception as e:
+            raise RuntimeError('exception: ' + str(e))
+
+        return ret
 
     def read_callback(self):
         try:
