@@ -3,6 +3,10 @@
 #
 # Works with InfluxDB v0.8.x, probably does not work with v0.9.x
 #
+# install influxdb-python:
+#
+# pip install influxdb --proxy=http://www-cache.gwdg.de:3128
+#
 
 import argparse
 
